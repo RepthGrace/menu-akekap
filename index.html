@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R.M. Akekap - Anda Kenyang Kami Puas</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: { akekapRed: '#cc0000', akekapBlack: '#0f0f0f', akekapDark: '#181818' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(204, 0, 0, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 0, 0, 0.06) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-animate { animation: slideUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="font-sans pb-36 text-gray-100 selection:bg-akekapRed selection:text-white">
+
+    <!-- HEADER RESPONSIF HP -->
+    <header class="bg-akekapBlack/95 backdrop-blur-md sticky top-0 z-40 shadow-2xl border-b border-gray-800/60 rounded-b-3xl">
+        <div class="px-4 py-3.5 max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-base sm:text-xl md:text-2xl font-black text-white tracking-wide uppercase">RUMAH MAKAN AKEKAP</h1>
+                <p class="text-[10px] sm:text-xs text-akekapRed font-medium italic lowercase tracking-wider">anda kenyang kami puas</p>
+            </div>
+            
+            <a href="admin.html" class="bg-akekapDark px-3.5 py-2 rounded-full border border-gray-700/60 text-[11px] sm:text-xs font-bold hover:border-akekapRed hover:text-akekapRed transition flex items-center gap-1.5 shadow-md shrink-0">
+                <i class="fa-solid fa-lock text-akekapRed"></i> <span>Admin</span>
+            </a>
+        </div>
+        
+        <div class="px-4 pb-4 max-w-7xl mx-auto">
+            <div class="relative mt-1">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                </div>
+                <input type="text" id="search-input" onkeyup="filterMenu()" 
+                       class="w-full pl-10 pr-4 py-2.5 bg-gray-900/90 border border-gray-800 text-white text-sm rounded-2xl focus:outline-none focus:border-akekapRed transition placeholder-gray-500 shadow-inner" 
+                       placeholder="Cari menu favoritmu...">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto mt-4 px-4">
+        <!-- KATEGORI SCROLLABLE HP -->
+        <div class="mb-5">
+            <div class="flex space-x-2.5 overflow-x-auto no-scrollbar py-1" id="category-container">
+                <button onclick="setCategory('Semua', this)" class="cat-btn whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs sm:text-sm bg-akekapRed text-white shadow-md transition">Semua</button>
+                <button onclick="setCategory('Makanan', this)" class="cat-btn whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs sm:text-sm bg-gray-900 text-gray-300 border border-gray-800 hover:bg-gray-800 transition">Makanan</button>
+                <button onclick="setCategory('Minuman', this)" class="cat-btn whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs sm:text-sm bg-gray-900 text-gray-300 border border-gray-800 hover:bg-gray-800 transition">Minuman</button>
+                <button onclick="setCategory('Dessert', this)" class="cat-btn whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs sm:text-sm bg-gray-900 text-gray-300 border border-gray-800 hover:bg-gray-800 transition">Dessert</button>
+            </div>
+        </div>
+
+        <!-- DAFTAR MENU GRID HP -->
+        <div>
+            <div id="menu-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5"></div>
+            <div id="empty-state" class="hidden text-center py-12">
+                <i class="fa-solid fa-face-frown text-3xl text-gray-600 mb-2"></i>
+                <p class="text-gray-400 text-xs sm:text-sm font-medium">Menu tidak ditemukan.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FLOATING CART / KERANJANG MELAYANG KHUSUS HP -->
+    <div class="fixed bottom-0 left-0 w-full z-40 p-3 pointer-events-none">
+        <div class="max-w-7xl mx-auto pointer-events-auto bg-akekapDark/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-2xl p-2.5 sm:p-3 flex items-center justify-between border border-gray-800">
+            <div class="flex items-center gap-2.5 pl-2">
+                <div class="relative bg-akekapBlack p-2.5 rounded-xl sm:rounded-2xl border border-gray-800">
+                    <i class="fa-solid fa-basket-shopping text-white text-base sm:text-lg"></i>
+                    <span id="cart-count-badge" class="absolute -top-2 -right-2 bg-akekapRed text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full border-2 border-akekapDark hidden shadow">0</span>
+                </div>
+                <div>
+                    <p class="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Tagihan</p>
+                    <p class="text-sm sm:text-base md:text-lg font-bold text-white leading-none" id="cart-total-text">Rp 0</p>
+                </div>
+            </div>
+            <button onclick="bukaModalCheckout()" class="bg-akekapRed hover:bg-red-700 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm transition shadow-lg flex items-center gap-2">
+                Checkout <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL CHECKOUT RESPONSIF -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-center items-end sm:items-center opacity-0 transition-opacity duration-300">
+        <div class="bg-akekapDark text-gray-100 w-full sm:w-[480px] rounded-t-3xl sm:rounded-3xl flex flex-col max-h-[85vh] sm:max-h-[90vh] shadow-2xl border border-gray-800 transform translate-y-full sm:translate-y-0 transition-transform duration-300">
+            
+            <div class="p-4 sm:p-5 border-b border-gray-800 flex justify-between items-center sticky top-0 bg-akekapDark rounded-t-3xl z-10">
+                <div class="flex items-center gap-2.5">
+                    <button onclick="toggleModal('checkout-modal')" class="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center text-gray-300 transition text-xs">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h2 class="text-base sm:text-lg font-extrabold text-white">Detail Pesanan</h2>
+                </div>
+            </div>
+            
+            <div class="overflow-y-auto p-4 sm:p-5 pb-24 space-y-4">
+                <div id="cart-items" class="space-y-2.5"></div>
+
+                <div class="border-t border-gray-800 pt-4">
+                    <h3 class="font-bold text-xs sm:text-sm text-gray-200 mb-3 flex items-center gap-2">
+                        <i class="fa-regular fa-id-card text-akekapRed"></i> Informasi Pelanggan & Pembayaran
+                    </h3>
+                    <form id="order-form" onsubmit="prosesCheckout(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Nama Pemesan</label>
+                            <input type="text" id="customer_name" required class="w-full bg-gray-900 border border-gray-800 text-white text-sm rounded-xl p-3 focus:outline-none focus:border-akekapRed transition" placeholder="Masukkan nama Anda">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Tipe Pesanan</label>
+                                <select id="order_type" onchange="toggleTableInput()" required class="w-full bg-gray-900 border border-gray-800 text-white text-sm rounded-xl p-3 focus:outline-none focus:border-akekapRed appearance-none">
+                                    <option value="Dine-in">Dine-in (Makan di Tempat)</option>
+                                    <option value="Takeaway">Takeaway (Bungkus)</option>
+                                </select>
+                            </div>
+                            <div id="table_input_container">
+                                <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Nomor Meja</label>
+                                <input type="number" id="table_number" class="w-full bg-gray-900 border border-gray-800 text-white text-sm rounded-xl p-3 focus:outline-none focus:border-akekapRed" placeholder="Cth: 5">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase mb-1">Metode Pembayaran</label>
+                            <select id="payment_method" onchange="togglePaymentMethod()" required class="w-full bg-gray-900 border border-gray-800 text-white text-sm rounded-xl p-3 focus:outline-none focus:border-akekapRed appearance-none">
+                                <option value="" disabled selected>-- Pilih Metode Pembayaran --</option>
+                                <option value="Tunai">Uang Tunai (Cash di Kasir)</option>
+                                <option value="QRIS">QRIS (Scan QR Code)</option>
+                            </select>
+                        </div>
+
+                        <!-- KOTAK QR CODE DI HP -->
+                        <div id="qris-container" class="hidden bg-gray-900 p-3.5 rounded-2xl border border-gray-800 text-center space-y-2.5">
+                            <p class="text-[11px] font-bold text-gray-300">Scan QR Code di bawah untuk membayar:</p>
+                            <div class="bg-white p-2.5 rounded-xl inline-block shadow">
+                                <img src="qr.jpeg" alt="QRIS QR Code" class="w-36 h-36 object-contain mx-auto" onerror="this.src='https://placehold.co/150x150/ffffff/000000?text=QR.jpeg+Tidak+Ada'">
+                            </div>
+                            <p class="text-[10px] text-gray-400">Tunjukkan bukti bayar ke kasir setelah selesai.</p>
+                        </div>
+
+                        <div class="pt-2">
+                            <button type="submit" id="btn-submit" class="w-full bg-akekapRed hover:bg-red-700 text-white font-bold py-3.5 rounded-xl text-sm transition flex justify-center items-center gap-2 shadow-lg">
+                                <i class="fa-solid fa-receipt text-base"></i> Buat Pesanan & Cetak Struk
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL STRUK DIGITAL -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex justify-center items-center p-3">
+        <div id="receipt-card" class="bg-white text-gray-900 w-full max-w-sm rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+            <div class="text-center pb-3 border-b border-dashed border-gray-300">
+                <h3 class="text-lg font-black text-akekapBlack">R.M. AKEKAP</h3>
+                <p class="text-[11px] text-gray-500 italic">"Anda Kenyang Kami Puas"</p>
+                <div class="mt-2 inline-block bg-green-100 text-green-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                    <i class="fa-solid fa-check-circle mr-1"></i> Transaksi Berhasil Dicatat
+                </div>
+            </div>
+            
+            <div class="py-3 space-y-1.5 text-xs border-b border-dashed border-gray-300">
+                <div class="flex justify-between"><span class="text-gray-500">Nama:</span> <span id="rcpt-name" class="font-bold"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Tipe:</span> <span id="rcpt-type" class="font-bold"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Meja:</span> <span id="rcpt-table" class="font-bold"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Pembayaran:</span> <span id="rcpt-payment" class="font-bold text-akekapRed"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Waktu:</span> <span id="rcpt-time" class="font-bold"></span></div>
+            </div>
+
+            <div class="py-3">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Rincian Menu:</p>
+                <div id="rcpt-items" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-xs"></div>
+            </div>
+
+            <div class="pt-3 border-t border-gray-200 flex justify-between items-center mb-5">
+                <span class="font-bold text-gray-700 text-xs">Total Pembayaran:</span>
+                <span id="rcpt-total" class="font-black text-base text-akekapRed"></span>
+            </div>
+
+            <!-- Tombol Aksi Struk -->
+            <div id="receipt-actions" class="space-y-2">
+                <button onclick="window.print()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition text-xs flex justify-center items-center gap-2 shadow">
+                    <i class="fa-solid fa-print"></i> Cetak Struk Langsung
+                </button>
+                <button onclick="downloadStrukSebagaiGambar()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition text-xs shadow flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-download"></i> Download Struk (Format Gambar)
+                </button>
+                <button onclick="location.reload()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 rounded-lg text-[11px] transition">
+                    Selesai / Pesanan Baru
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://kncxuoxrygbswwpwmvrl.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_H5E0sFqIQvUg-Mf_DPApMQ_93FwUQk0'; 
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let menus = [];
+        let cart = []; 
+        let activeCategory = 'Semua';
+
+        async function loadMenusFromDB() {
+            try {
+                const { data, error } = await supabaseClient.from('menu_items').select('*').order('id', { ascending: true });
+                if (!error && data && data.length > 0) {
+                    menus = data;
+                } else {
+                    menus = [
+                        { id: 1, name: "Dimsum Cakalang", category: "Makanan", price: 45000, image_url: "https://placehold.co/400x400/181818/ffffff?text=Dimsum+Cakalang" }
+                    ];
+                }
+            } catch (err) {
+                menus = [
+                    { id: 1, name: "Dimsum Cakalang", category: "Makanan", price: 45000, image_url: "https://placehold.co/400x400/181818/ffffff?text=Dimsum+Cakalang" }
+                ];
+            }
+            renderMenus();
+        }
+
+        function renderMenus(searchQuery = '') {
+            const container = document.getElementById('menu-container');
+            const emptyState = document.getElementById('empty-state');
+            
+            const filteredMenus = menus.filter(menu => {
+                const matchCategory = activeCategory === 'Semua' || menu.category === activeCategory;
+                const matchSearch = menu.name.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchCategory && matchSearch;
+            });
+
+            if (filteredMenus.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = filteredMenus.map(menu => `
+                <div class="bg-akekapDark rounded-2xl shadow-lg border border-gray-800/80 overflow-hidden hover:border-akekapRed/50 transition-all duration-300 relative group flex flex-col h-full">
+                    <div class="overflow-hidden relative h-28 sm:h-40 w-full shrink-0 bg-gray-900">
+                        <img src="${menu.image || menu.image_url || 'https://placehold.co/400x400/181818/ffffff?text=Menu'}" class="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500 opacity-90" onerror="this.src='https://placehold.co/400x400/181818/ffffff?text=Menu'">
+                    </div>
+                    <div class="p-2.5 sm:p-4 flex flex-col flex-grow justify-between">
+                        <div>
+                            <p class="text-[9px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5">${menu.category}</p>
+                            <h3 class="font-bold text-xs sm:text-base text-white leading-tight">${menu.name}</h3>
+                        </div>
+                        <div class="flex justify-between items-end mt-2.5">
+                            <p class="text-akekapRed font-extrabold text-xs sm:text-base">Rp ${Number(menu.price).toLocaleString('id-ID')}</p>
+                            <button onclick="addToCart('${menu.id}')" class="bg-gray-800 hover:bg-akekapRed text-white w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-colors shrink-0 shadow">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setCategory(category, element) {
+            activeCategory = category;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs sm:text-sm bg-gray-900 text-gray-300 border border-gray-800 hover:bg-gray-800 transition";
+            });
+            element.className = "cat-btn whitespace-nowrap px-4 py-2 rounded-full font-semibold text-xs sm:text-sm bg-akekapRed text-white shadow-md transition";
+            renderMenus(document.getElementById('search-input').value);
+        }
+
+        function filterMenu() { renderMenus(document.getElementById('search-input').value); }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-900 border border-gray-800 text-white px-3.5 py-2 rounded-full text-xs font-medium shadow-2xl toast-animate flex items-center gap-2';
+            toast.innerHTML = `<i class="fa-solid fa-check-circle text-green-400"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 2000);
+        }
+
+        function addToCart(menuId) {
+            const menu = menus.find(m => m.id == menuId);
+            const existing = cart.find(item => item.id == menuId);
+            if (existing) existing.qty += 1;
+            else cart.push({ ...menu, image: menu.image || menu.image_url, qty: 1 });
+            updateCartUI();
+            showToast(`${menu.name} ditambahkan`);
+        }
+
+        function ubahQty(menuId, delta) {
+            const idx = cart.findIndex(item => item.id == menuId);
+            if (idx > -1) {
+                cart[idx].qty += delta;
+                if (cart[idx].qty <= 0) cart.splice(idx, 1);
+                updateCartUI();
+            }
+        }
+
+        function updateCartUI() {
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            const badge = document.getElementById('cart-count-badge');
+            if (totalQty > 0) { badge.innerText = totalQty; badge.classList.remove('hidden'); }
+            else badge.classList.add('hidden');
+
+            document.getElementById('cart-total-text').innerText = 'Rp ' + totalPrice.toLocaleString('id-ID');
+
+            const container = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = `<div class="text-center py-6"><p class="text-gray-400 text-xs">Keranjang kosong</p></div>`;
+            } else {
+                container.innerHTML = cart.map(item => `
+                    <div class="flex justify-between items-center bg-gray-900 p-2.5 rounded-xl border border-gray-800">
+                        <div class="flex items-center gap-2.5">
+                            <img src="${item.image || item.image_url}" class="w-10 h-10 rounded-lg object-cover" onerror="this.src='https://placehold.co/400x400/181818/ffffff?text=Menu'">
+                            <div>
+                                <p class="font-bold text-xs text-white">${item.name}</p>
+                                <p class="font-bold text-akekapRed text-[11px]">Rp ${(item.price * item.qty).toLocaleString('id-ID')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded-lg p-1">
+                            <button onclick="ubahQty('${item.id}', -1)" class="w-5 h-5 text-gray-300 font-bold text-xs">-</button>
+                            <span class="text-xs font-bold w-4 text-center text-white">${item.qty}</span>
+                            <button onclick="ubahQty('${item.id}', 1)" class="w-5 h-5 text-gray-300 font-bold text-xs">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function toggleModal(id) {
+            const m = document.getElementById(id);
+            m.classList.toggle('hidden');
+            m.classList.toggle('opacity-0');
+        }
+
+        // Fungsi khusus pengaman agar modal checkout selalu terbuka jika keranjang tidak kosong
+        function bukaModalCheckout() {
+            if (cart.length === 0) {
+                alert('Keranjang belanja Anda masih kosong!');
+                return;
+            }
+            toggleModal('checkout-modal');
+        }
+
+        function toggleTableInput() {
+            const type = document.getElementById('order_type').value;
+            const tc = document.getElementById('table_input_container');
+            if (type === 'Takeaway') { 
+                tc.classList.add('opacity-50', 'pointer-events-none'); 
+                document.getElementById('table_number').value = ''; 
+            } else { 
+                tc.classList.remove('opacity-50', 'pointer-events-none'); 
+            }
+        }
+
+        function togglePaymentMethod() {
+            const payment = document.getElementById('payment_method').value;
+            const qrisContainer = document.getElementById('qris-container');
+            if (payment === 'QRIS') {
+                qrisContainer.classList.remove('hidden');
+            } else {
+                qrisContainer.classList.add('hidden');
+            }
+        }
+
+        async function prosesCheckout(event) {
+            event.preventDefault(); 
+            if (cart.length === 0) return;
+
+            const name = document.getElementById('customer_name').value;
+            const type = document.getElementById('order_type').value;
+            const table = document.getElementById('table_number').value || "-";
+            const payment = document.getElementById('payment_method').value;
+            
+            if (!payment) {
+                alert('Silakan pilih metode pembayaran terlebih dahulu!');
+                return;
+            }
+
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const waktuSkrg = new Date().toLocaleString('id-ID');
+
+            try {
+                await supabaseClient.from('orders').insert([{ 
+                    customer_name: name, 
+                    order_type: type, 
+                    table_number: table, 
+                    payment_method: payment, 
+                    order_details: cart, 
+                    total_price: totalPrice 
+                }]);
+            } catch (err) {
+                console.error("Gagal simpan order:", err);
+            }
+
+            document.getElementById('rcpt-name').innerText = name;
+            document.getElementById('rcpt-type').innerText = type;
+            document.getElementById('rcpt-table').innerText = table;
+            document.getElementById('rcpt-payment').innerText = payment;
+            document.getElementById('rcpt-time').innerText = waktuSkrg;
+            document.getElementById('rcpt-total').innerText = 'Rp ' + totalPrice.toLocaleString('id-ID');
+            document.getElementById('rcpt-items').innerHTML = cart.map(i => `<div class="flex justify-between text-xs py-0.5"><span>${i.qty}x ${i.name}</span> <span class="font-bold">Rp ${(i.price * i.qty).toLocaleString('id-ID')}</span></div>`).join('');
+
+            toggleModal('checkout-modal');
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function downloadStrukSebagaiGambar() {
+            const strukEl = document.getElementById('receipt-card');
+            const actionsEl = document.getElementById('receipt-actions');
+            actionsEl.style.display = 'none';
+
+            setTimeout(() => {
+                html2canvas(strukEl, { backgroundColor: '#ffffff', scale: 2, useCORS: true }).then(canvas => {
+                    actionsEl.style.display = 'block';
+                    const link = document.createElement('a');
+                    link.download = `Struk-Akekap-${Date.now()}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    showToast("Struk berhasil di-download sebagai gambar!");
+                }).catch(err => {
+                    actionsEl.style.display = 'block';
+                    alert("Gagal mendownload gambar struk.");
+                });
+            }, 100);
+        }
+
+        loadMenusFromDB();
+    </script>
+</body>
+</html>
